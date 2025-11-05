@@ -1,9 +1,6 @@
-from typing import Optional, Iterable, cast, Dict, Tuple
+from typing import Optional
 from pydantic import BaseModel, EmailStr, Field
-from nest_py.common import controller, get, post, put, delete, injectable
-from nest_py.utils.artifacts import tree, Controller
-from nest_py.common import module
-import inspect
+from nest_py.common import controller, get, post, put, delete, module
 
 
 # =========================
@@ -51,8 +48,8 @@ class Employee(EmployeeBase):
 # SERVICIOS
 # =========================
 
-@injectable
 class UserService:
+
     def __init__(self):
         # “base de datos” en memoria
         self.users = {
@@ -98,7 +95,6 @@ class UserService:
         del self.users[id]
 
 
-@injectable
 class EmployeeService:
     def __init__(self):
         self.employees = {
@@ -233,7 +229,3 @@ class EmployeeController:
 )
 class AppModule:
     pass
-
-
-for key, value in cast(Iterable[Tuple[str, Controller]], tree._controllers.items()):
-    print(key, inspect.signature(value.clazz))

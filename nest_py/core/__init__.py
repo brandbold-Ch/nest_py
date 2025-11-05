@@ -1,6 +1,4 @@
-from archon.decorators.metadata_manager import MetaArchon
+from nest_py.core.application_context import NestPyApplicationContext
 
 
-__all__ = [
-    "MetaArchon"
-]
+__all__ = ["NestPyApplicationContext"]

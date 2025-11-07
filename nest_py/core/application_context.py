@@ -24,7 +24,6 @@ class Singleton:
                     cls.initialize_vars(config)
 
             cls._instance = super().__new__(cls)
-
         return cls._instance
 
 

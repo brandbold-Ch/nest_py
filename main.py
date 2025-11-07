@@ -2,6 +2,7 @@ from typing import Optional
 from pydantic import BaseModel, EmailStr, Field
 from nest_py.common import controller, get, post, put, delete, module
 from nest_py.core import NestPyApplicationContext
+from fastapi_adapter import FastAPIAdapter
 
 
 # =========================
@@ -232,4 +233,30 @@ class AppModule:
     pass
 
 
-print(NestPyApplicationContext().get_controllers())
+nest = NestPyApplicationContext()
+
+app = FastAPIAdapter()
+app.conf.set_debug(True)
+app.conf.set_description("NestPy Core App")
+app.conf.set_title("NestPy")
+app.conf.set_version("1.0")
+app.conf.set_contact({
+    "name": "Brandon Jared Molina Vázquez",
+    "email": "jaredbrandon970@gmail.com"
+})
+
+
+for name, params in nest.get_controllers().items():
+    app.comp.add_router_group(name, prefix=params.get("params").get("args")[0])
+
+    for k in params.get("routes"):
+        app.comp.add_route_in_router_group(
+            name,
+            endpoint=k.get("handler"),
+            tags=[name],
+            path=k.get("metadata").get("args")[0],
+            **k.get("metadata").get("kwargs")
+        )
+
+
+app.lif.start_server("127.0.0.1", 5000)

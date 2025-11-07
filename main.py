@@ -1,6 +1,7 @@
 from typing import Optional
 from pydantic import BaseModel, EmailStr, Field
 from nest_py.common import controller, get, post, put, delete, module
+from nest_py.core import NestPyApplicationContext
 
 
 # =========================
@@ -219,13 +220,16 @@ class EmployeeController:
 
 @module(
     controllers=[
-        "UserController", 
+        "UserController",
         "EmployeeController"
     ],
     providers=[
-        "UserService", 
+        "UserService",
         "EmployeeService"
     ],
 )
 class AppModule:
     pass
+
+
+print(NestPyApplicationContext().get_controllers())

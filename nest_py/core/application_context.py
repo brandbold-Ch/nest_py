@@ -2,22 +2,44 @@ from typing import Any, Dict, List, Tuple, Type, TypeVar
 
 
 T = TypeVar("T")
+INIT_VARS = "init_vars"
+CONF = "Config"
 
 
 class Singleton:
     _instance: "Singleton" = None
 
+    @classmethod
+    def initialize_vars(cls, config: Type[T]) -> None:
+        init_definitions = getattr(config, INIT_VARS, {})
+        for name, type_hint in init_definitions.items():
+            setattr(cls, name, type_hint())
+
     def __new__(cls, *args, **kwargs) -> "Singleton":
         if not cls._instance:
+            if hasattr(cls, CONF):
+                config = getattr(cls, CONF)
+
+                if hasattr(config, INIT_VARS):
+                    cls.initialize_vars(config)
+
             cls._instance = super().__new__(cls)
+
         return cls._instance
 
 
 class NestPyApplicationContext(Singleton):
 
+    class Config:
+        init_vars = {
+            "controllers": dict,
+            "modules": dict,
+            "injectables": dict,
+        }
+
     def __init__(self) -> None:
-        self._controllers = {}
-        self._modules = {}
+        self._controllers = getattr(self, "controllers")
+        self._modules = getattr(self, "modules")
 
     def register_controller(
             self,
@@ -72,5 +94,5 @@ class NestPyApplicationContext(Singleton):
     def clear_modules(self) -> None:
         self._modules.clear()
 
-    def resolve(self):
+    def resolve(self) -> None:
         ...

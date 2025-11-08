@@ -14,7 +14,6 @@ def module(
 ) -> Callable[[Type[T]], Type[T]]:
     def wrapper(cls: Type[T]) -> Type[T]:
         ctx_app.register_module(
-            name=cls.__name__,
             module_class=cls,
             imports=imports,
             controllers=controllers,

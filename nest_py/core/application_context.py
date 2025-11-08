@@ -1,3 +1,4 @@
+import inspect
 from typing import Any, Dict, List, Tuple, Type, TypeVar
 
 
@@ -39,6 +40,7 @@ class NestPyApplicationContext(Singleton):
     def __init__(self) -> None:
         self._controllers = getattr(self, "controllers")
         self._modules = getattr(self, "modules")
+        self._injectables = getattr(self, "injectables")
 
     def register_controller(
             self,
@@ -51,6 +53,7 @@ class NestPyApplicationContext(Singleton):
             "name": name,
             "controller_class": controller_class,
             "routes": routes,
+            "deps": inspect.signature(controller_class),
             "params": {
                 "args": list(params[0]),
                 "kwargs": params[1]
@@ -68,13 +71,13 @@ class NestPyApplicationContext(Singleton):
 
     def register_module(
             self,
-            name: str,
             module_class: Type[T],
             imports: List[str],
             controllers: List[str],
             providers: List[str],
             exports: List[str]
     ) -> None:
+        name = module_class.__name__
         self._modules[name] = {
             "name": name,
             "module_class": module_class,
@@ -92,6 +95,25 @@ class NestPyApplicationContext(Singleton):
 
     def clear_modules(self) -> None:
         self._modules.clear()
+
+    def register_injectable(
+            self,
+            injectable_class: Type[T]
+    ) -> None:
+        name = injectable_class.__name__
+        self._injectables[name] = {
+            "injectable_class": injectable_class,
+            "deps": inspect.signature(injectable_class)
+        }
+
+    def get_injectables(self) -> Dict[str, Any]:
+        return self._injectables
+
+    def get_injectable(self, name: str) -> Dict[str, Any]:
+        return self._injectables.get(name, {})
+
+    def clear_injectables(self) -> None:
+        self._injectables.clear()
 
     def resolve(self) -> None:
         ...

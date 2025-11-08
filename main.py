@@ -1,6 +1,6 @@
 from typing import Optional
 from pydantic import BaseModel, EmailStr, Field
-from nest_py.common import controller, get, post, put, delete, module
+from nest_py.common import controller, get, post, put, delete, module, injectable
 from nest_py.core import NestPyApplicationContext
 from fastapi_adapter import FastAPIAdapter
 
@@ -50,6 +50,7 @@ class Employee(EmployeeBase):
 # SERVICIOS
 # =========================
 
+@injectable()
 class UserService:
 
     def __init__(self):
@@ -97,6 +98,7 @@ class UserService:
         del self.users[id]
 
 
+@injectable()
 class EmployeeService:
     def __init__(self):
         self.employees = {
@@ -236,7 +238,7 @@ class AppModule:
 nest = NestPyApplicationContext()
 
 app = FastAPIAdapter()
-app.conf.set_debug(True)
+app.conf.set_debug(False)
 app.conf.set_description("NestPy Core App")
 app.conf.set_title("NestPy")
 app.conf.set_version("1.0")

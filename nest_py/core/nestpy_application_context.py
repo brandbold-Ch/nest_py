@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Tuple, Type, TypeVar
 
 T = TypeVar("T")
 INIT_VARS = "init_vars"
-CONF = "Config"
+CLASS = "Config"
 
 
 class Singleton:
@@ -12,18 +12,21 @@ class Singleton:
 
     @classmethod
     def initialize_vars(cls, config: Type[T]) -> None:
-        init_definitions = getattr(config, INIT_VARS, {})
-        for name, type_hint in init_definitions.items():
+        init_vars = getattr(config, INIT_VARS, {})
+        for name, type_hint in init_vars.items():
             setattr(cls, name, type_hint())
+
+    @classmethod
+    def check_config(cls):
+        if not hasattr(cls, CLASS): return
+        config = getattr(cls, CLASS)
+
+        if hasattr(config, INIT_VARS):
+            cls.initialize_vars(config)
 
     def __new__(cls, *args, **kwargs) -> "Singleton":
         if not cls._instance:
-            if hasattr(cls, CONF):
-                config = getattr(cls, CONF)
-
-                if hasattr(config, INIT_VARS):
-                    cls.initialize_vars(config)
-
+            cls.check_config()
             cls._instance = super().__new__(cls)
         return cls._instance
 
@@ -116,4 +119,5 @@ class NestPyApplicationContext(Singleton):
         self._injectables.clear()
 
     def resolve(self) -> None:
-        ...
+        for module in self._modules.values():
+            print(module)

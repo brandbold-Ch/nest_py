@@ -1,5 +1,5 @@
 from typing import Type, TypeVar
-from nest_py.core.application_context import NestPyApplicationContext
+from nest_py.core.nestpy_application_context import NestPyApplicationContext
 
 
 ctx_app = NestPyApplicationContext()

@@ -1,8 +1,11 @@
+from cgitb import handler
+from functools import wraps
 from typing import Optional
 from pydantic import BaseModel, EmailStr, Field
 from nest_py.common import controller, get, post, put, delete, module, injectable
 from nest_py.core import NestPyApplicationContext
 from fastapi_adapter import FastAPIAdapter
+import inspect
 
 
 # =========================
@@ -145,7 +148,7 @@ class EmployeeService:
 @controller("/users")
 class UserController:
     
-    def __init__(self, service: UserService):
+    def __init__(self, service: UserService = UserService()):
         self.service = service
 
     @get("/")
@@ -187,7 +190,7 @@ class UserController:
 @controller("/employees")
 class EmployeeController:
     
-    def __init__(self, service: EmployeeService):
+    def __init__(self, service: EmployeeService = EmployeeService()):
         self.service = service
 
     @get("/")
@@ -248,17 +251,64 @@ app.conf.set_contact({
 })
 
 
+"""
+        func_sig = inspect.signature(func).parameters
+
+        def generic_func(*f_args, **f_kwargs):
+            return func(*f_args, **f_kwargs)
+
+        generic_func.__signature__ = inspect.Signature(
+            parameters=[
+                inspect.Parameter(
+                    name=param.name,
+                    kind=inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                    annotation=param.annotation,
+                    default=param.default
+                ) for param in func_sig.values()
+            ]
+        )
+"""
+
+def make(func, controller, parameters):
+    @wraps(func)
+    async def generic_func(**kwargs):
+        return await func(controller, **kwargs)
+
+    generic_func.__signature__ = inspect.Signature(
+        parameters=parameters
+    )
+    return generic_func
+
+
 for name, params in nest.get_controllers().items():
     app.comp.add_router_group(name, prefix=params.get("params").get("args")[0])
+    controller = params.get("controller_class")()
 
     for k in params.get("routes"):
+        func = k.get("handler")
+        func_sig = inspect.signature(func).parameters
+        parameters = []
+
+        for param in func_sig.values():
+            if param.name == "self":
+                continue
+
+            parameters.append(
+                inspect.Parameter(
+                    name=param.name,
+                    kind=inspect.Parameter.KEYWORD_ONLY,
+                    annotation=param.annotation,
+                    default=param.default
+                )
+            )
+
         app.comp.add_route_in_router_group(
             name,
-            endpoint=k.get("handler"),
+            endpoint=make(func, controller, parameters),
             tags=[name],
             path=k.get("metadata").get("args")[0],
             **k.get("metadata").get("kwargs")
         )
 
-
-app.lif.start_server("127.0.0.1", 5000)
+if __name__ == "__main__":
+    app.lif.start_server("127.0.0.1", 5000)

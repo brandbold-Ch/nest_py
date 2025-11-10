@@ -1,4 +1,6 @@
+from tkinter.font import names
 from typing import Callable, Any
+import inspect
 
 
 def route(*args, **kwargs) -> Callable:

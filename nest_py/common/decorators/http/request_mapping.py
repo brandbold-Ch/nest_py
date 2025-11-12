@@ -1,6 +1,8 @@
-from tkinter.font import names
 from typing import Callable, Any
-import inspect
+from nest_py.core.nestpy_application_context import NestPyApplicationContext
+
+
+ctx_app = NestPyApplicationContext()
 
 
 def route(*args, **kwargs) -> Callable:

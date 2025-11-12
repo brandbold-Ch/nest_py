@@ -1,10 +1,22 @@
 import inspect
+from collections.abc import Callable
 from typing import Any, Dict, List, Tuple, Type, TypeVar
+from functools import wraps
+from inspect import Parameter, Signature
 
 
 T = TypeVar("T")
 INIT_VARS = "init_vars"
 CLASS = "Config"
+
+
+def make_handler(handler: Callable, controller: Type[T], parameters: List[Parameter]) -> Callable:
+    @wraps(handler)
+    async def generic_handler(**kwargs) -> Callable[[Any] , Any]:
+        return await handler(controller, **kwargs)
+
+    generic_handler.__signature__ = Signature(parameters=parameters)
+    return generic_handler
 
 
 class Singleton:
@@ -17,7 +29,7 @@ class Singleton:
             setattr(cls, name, type_hint())
 
     @classmethod
-    def check_config(cls):
+    def check_config(cls) -> None:
         if not hasattr(cls, CLASS): return
         config = getattr(cls, CLASS)
 
@@ -118,6 +130,22 @@ class NestPyApplicationContext(Singleton):
     def clear_injectables(self) -> None:
         self._injectables.clear()
 
-    def resolve(self) -> None:
-        for module in self._modules.values():
-            print(module)
+    def wrap_routes(self) -> None:
+        for name, metadata in self._controllers.items():
+            controller = metadata.get("controller_class")()
+
+            for route in metadata.get("routes"):
+                handler = route.get("handler")
+                handler_sig = dict(inspect.signature(handler).parameters)
+                del handler_sig["self"]
+
+                parameters = [
+                    Parameter(
+                        name=param.name,
+                        kind=inspect.Parameter.KEYWORD_ONLY,
+                        annotation=param.annotation,
+                        default=param.default
+                    ) for param in handler_sig.values()
+                ]
+
+                route["wrapped_handler"] = make_handler(handler, controller, parameters)

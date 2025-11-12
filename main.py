@@ -251,64 +251,23 @@ app.conf.set_contact({
 })
 
 
-"""
-        func_sig = inspect.signature(func).parameters
-
-        def generic_func(*f_args, **f_kwargs):
-            return func(*f_args, **f_kwargs)
-
-        generic_func.__signature__ = inspect.Signature(
-            parameters=[
-                inspect.Parameter(
-                    name=param.name,
-                    kind=inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                    annotation=param.annotation,
-                    default=param.default
-                ) for param in func_sig.values()
-            ]
-        )
-"""
-
-def make(func, controller, parameters):
-    @wraps(func)
-    async def generic_func(**kwargs):
-        return await func(controller, **kwargs)
-
-    generic_func.__signature__ = inspect.Signature(
-        parameters=parameters
-    )
-    return generic_func
-
+nest.wrap_routes()
 
 for name, params in nest.get_controllers().items():
     app.comp.add_router_group(name, prefix=params.get("params").get("args")[0])
-    controller = params.get("controller_class")()
 
     for k in params.get("routes"):
-        func = k.get("handler")
-        func_sig = inspect.signature(func).parameters
-        parameters = []
-
-        for param in func_sig.values():
-            if param.name == "self":
-                continue
-
-            parameters.append(
-                inspect.Parameter(
-                    name=param.name,
-                    kind=inspect.Parameter.KEYWORD_ONLY,
-                    annotation=param.annotation,
-                    default=param.default
-                )
-            )
+        handler = k.get("wrapped_handler")
 
         app.comp.add_route_in_router_group(
             name,
-            endpoint=make(func, controller, parameters),
+            endpoint=handler,
             tags=[name],
             path=k.get("metadata").get("args")[0],
             **k.get("metadata").get("kwargs")
         )
 
+
 if __name__ == "__main__":
     app.lif.start_server("127.0.0.1", 5000)
+    ...

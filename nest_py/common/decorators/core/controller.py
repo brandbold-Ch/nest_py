@@ -1,5 +1,5 @@
 from typing import Callable, Type, TypeVar
-from nest_py.core.nestpy_application_context import NestPyApplicationContext
+from nest_py.core import NestPyApplicationContext
 import inspect
 
 

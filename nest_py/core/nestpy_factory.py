@@ -1,7 +1,12 @@
-
+from typing import Union
 
 
 class NestPyFactory:
+
     @staticmethod
-    def create_instance(class_type, *args, **kwargs):
-        return class_type(*args, **kwargs)
+    def create(module_class, *args, **kwargs):
+        return module_class(*args, **kwargs)
+
+    @staticmethod
+    def listen(cls, host: str, port: Union[str, int]) -> None:
+        print(f"Listening on port {port}...")

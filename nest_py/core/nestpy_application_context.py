@@ -3,6 +3,7 @@ from collections.abc import Callable
 from typing import Any, Dict, List, Tuple, Type, TypeVar
 from functools import wraps
 from inspect import Parameter, Signature
+from nest_py.core.reflect import Reflect
 
 
 T = TypeVar("T")
@@ -10,13 +11,21 @@ INIT_VARS = "init_vars"
 CLASS = "Config"
 
 
-def make_handler(handler: Callable, controller: Type[T], parameters: List[Parameter]) -> Callable:
+def make_handler(
+        handler: Callable,
+        controller: Any,
+        parameters: List[Parameter]
+) -> Callable:
     @wraps(handler)
-    async def generic_handler(**kwargs) -> Callable[[Any] , Any]:
+    async def async_generic_handler(**kwargs) -> Callable[[Any] , Any]:
         return await handler(controller, **kwargs)
 
-    generic_handler.__signature__ = Signature(parameters=parameters)
-    return generic_handler
+    @wraps(handler)
+    def sync_generic_handler(**kwargs) -> Callable[[Any], Any]:
+        return handler(controller, **kwargs)
+
+    async_generic_handler.__signature__ = Signature(parameters=parameters)
+    return async_generic_handler
 
 
 class Singleton:
@@ -24,14 +33,14 @@ class Singleton:
 
     @classmethod
     def initialize_vars(cls, config: Type[T]) -> None:
-        init_vars = getattr(config, INIT_VARS, {})
+        init_vars = Reflect.get(config, INIT_VARS)
         for name, type_hint in init_vars.items():
-            setattr(cls, name, type_hint())
+            Reflect.set(cls, name, type_hint())
 
     @classmethod
     def check_config(cls) -> None:
-        if not hasattr(cls, CLASS): return
-        config = getattr(cls, CLASS)
+        if not Reflect.has(cls, CLASS): return
+        config = Reflect.get(cls, CLASS)
 
         if hasattr(config, INIT_VARS):
             cls.initialize_vars(config)
@@ -53,9 +62,9 @@ class NestPyApplicationContext(Singleton):
         }
 
     def __init__(self) -> None:
-        self._controllers = getattr(self, "controllers")
-        self._modules = getattr(self, "modules")
-        self._injectables = getattr(self, "injectables")
+        self._controllers = Reflect.get(self, "controllers")
+        self._modules = Reflect.get(self, "modules")
+        self._injectables = Reflect.get(self, "injectables")
 
     def register_controller(
             self,
@@ -130,22 +139,17 @@ class NestPyApplicationContext(Singleton):
     def clear_injectables(self) -> None:
         self._injectables.clear()
 
-    def wrap_routes(self) -> None:
-        for name, metadata in self._controllers.items():
-            controller = metadata.get("controller_class")()
+    def wrap_handler(self, controller: Any, handler: Callable) -> Callable:
+        handler_sig = dict(inspect.signature(handler).parameters)
+        del handler_sig["self"]
 
-            for route in metadata.get("routes"):
-                handler = route.get("handler")
-                handler_sig = dict(inspect.signature(handler).parameters)
-                del handler_sig["self"]
+        parameters = [
+            Parameter(
+                name=param.name,
+                kind=inspect.Parameter.KEYWORD_ONLY,
+                annotation=param.annotation,
+                default=param.default
+            ) for param in handler_sig.values()
+        ]
 
-                parameters = [
-                    Parameter(
-                        name=param.name,
-                        kind=inspect.Parameter.KEYWORD_ONLY,
-                        annotation=param.annotation,
-                        default=param.default
-                    ) for param in handler_sig.values()
-                ]
-
-                route["wrapped_handler"] = make_handler(handler, controller, parameters)
+        return make_handler(handler, controller, parameters)

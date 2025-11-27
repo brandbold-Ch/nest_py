@@ -1,11 +1,8 @@
-from cgitb import handler
-from functools import wraps
 from typing import Optional
 from pydantic import BaseModel, EmailStr, Field
 from nest_py.common import controller, get, post, put, delete, module, injectable
 from nest_py.core import NestPyApplicationContext
 from fastapi_adapter import FastAPIAdapter
-import inspect
 
 
 # =========================
@@ -238,9 +235,10 @@ class AppModule:
     pass
 
 
-nest = NestPyApplicationContext()
+nestpy = NestPyApplicationContext()
 
 app = FastAPIAdapter()
+app.is_async(True)
 app.conf.set_debug(False)
 app.conf.set_description("NestPy Core App")
 app.conf.set_title("NestPy")
@@ -251,23 +249,21 @@ app.conf.set_contact({
 })
 
 
-nest.wrap_routes()
-
-for name, params in nest.get_controllers().items():
+for name, params in nestpy.get_controllers().items():
     app.comp.add_router_group(name, prefix=params.get("params").get("args")[0])
+    controller_class = params.get("controller_class")
 
-    for k in params.get("routes"):
-        handler = k.get("wrapped_handler")
+    for route in params.get("routes"):
+        handler = route.get("handler")
 
         app.comp.add_route_in_router_group(
             name,
-            endpoint=handler,
+            endpoint=nestpy.wrap_handler(controller_class(), handler),
             tags=[name],
-            path=k.get("metadata").get("args")[0],
-            **k.get("metadata").get("kwargs")
+            path=route.get("metadata").get("args")[0],
+            **route.get("metadata").get("kwargs")
         )
 
 
 if __name__ == "__main__":
     app.lif.start_server("127.0.0.1", 5000)
-    ...

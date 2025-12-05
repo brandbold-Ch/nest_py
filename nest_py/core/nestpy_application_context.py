@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Tuple, Type, TypeVar
 from functools import wraps
 from inspect import Parameter, Signature
 from nest_py.core.reflect import Reflect
-
+from nest_py.core.structures import RouteDefinition
 
 T = TypeVar("T")
 INIT_VARS = "init_vars"
@@ -24,8 +24,8 @@ def make_handler(
     def sync_generic_handler(**kwargs) -> Callable[[Any], Any]:
         return handler(controller, **kwargs)
 
-    async_generic_handler.__signature__ = Signature(parameters=parameters)
-    return async_generic_handler
+    sync_generic_handler.__signature__ = Signature(parameters=parameters)
+    return sync_generic_handler
 
 
 class Singleton:
@@ -69,7 +69,7 @@ class NestPyApplicationContext(Singleton):
     def register_controller(
             self,
             controller_class: Type[T],
-            routes: List[Dict[str, Any]],
+            routes: List[RouteDefinition],
             params: Tuple[tuple, Dict[str, Any]]
     ) -> None:
         name = controller_class.__name__

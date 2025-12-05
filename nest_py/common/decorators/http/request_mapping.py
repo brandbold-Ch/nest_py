@@ -1,13 +1,13 @@
 from typing import Callable, Any
-from nest_py.core.nestpy_application_context import NestPyApplicationContext
-
+from nest_py.core import Reflect, NestPyApplicationContext
+from nest_py.core.constants import MetadataKeys
 
 ctx_app = NestPyApplicationContext()
 
 
-def route(*args, **kwargs) -> Callable:
-    def wrapper(func: Callable[[Any], Any]) -> Callable:
-        setattr(func, "_metadata", {"args": args, "kwargs": kwargs})
+def route(*args, **kwargs) -> Callable[[Callable[..., Any]], Callable]:
+    def wrapper(func: Callable[..., Any]) -> Callable[..., Any]:
+        Reflect.set(func, MetadataKeys.ROUTE_METADATA, {"args": args, "kwargs": kwargs})
         return func
     return wrapper
 

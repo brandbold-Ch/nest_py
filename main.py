@@ -149,25 +149,25 @@ class UserController:
         self.service = service
 
     @get("/")
-    async def get_users(self, search: Optional[str] = None):
+    def get_users(self, search: Optional[str] = None):
         return self.service.list_users(search)
 
     @get("/{id}")
-    async def get_user(self, id: int):
+    def get_user(self, id: int):
         user = self.service.get_user(id)
         if not user:
             return {"error": "User not found"}, 404
         return user
 
     @post("/")
-    async def create_user(self, user: UserCreate):
+    def create_user(self, user: UserCreate):
         try:
             return self.service.create_user(user)
         except ValueError as e:
             return {"error": str(e)}, 400
 
     @put("/{id}")
-    async def update_user(self, id: int, user: UserUpdate):
+    def update_user(self, id: int, user: UserUpdate):
         try:
             return self.service.update_user(id, user)
         except KeyError:
@@ -176,7 +176,7 @@ class UserController:
             return {"error": str(e)}, 400
 
     @delete("/{id}")
-    async def delete_user(self, id: int):
+    def delete_user(self, id: int):
         try:
             self.service.delete_user(id)
             return {"message": "User deleted successfully"}
@@ -191,29 +191,29 @@ class EmployeeController:
         self.service = service
 
     @get("/")
-    async def get_employees(self, min_salary: Optional[float] = None):
+    def get_employees(self, min_salary: Optional[float] = None):
         return self.service.list_employees(min_salary)
 
     @get("/{id}")
-    async def get_employee(self, id: int):
+    def get_employee(self, id: int):
         emp = self.service.get_employee(id)
         if not emp:
             return {"error": "Employee not found"}, 404
         return emp
 
     @post("/")
-    async def create_employee(self, employee: EmployeeCreate):
+    def create_employee(self, employee: EmployeeCreate):
         return self.service.create_employee(employee)
 
     @put("/{id}")
-    async def update_employee(self, id: int, employee: EmployeeUpdate):
+    def update_employee(self, id: int, employee: EmployeeUpdate):
         try:
             return self.service.update_employee(id, employee)
         except KeyError:
             return {"error": "Employee not found"}, 404
 
     @delete("/{id}")
-    async def delete_employee(self, id: int):
+    def delete_employee(self, id: int):
         try:
             self.service.delete_employee(id)
             return {"message": "Employee deleted successfully"}
